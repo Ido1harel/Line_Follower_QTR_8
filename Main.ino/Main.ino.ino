@@ -1,91 +1,91 @@
-#include <QTRSensors.h>
+#include <PololuQTRSensors.h>
+#include <AFMotor.h>
 
-// This example esignedis d for use with eight RC QTR sensors. These
-// reflectance sensors should be connected to digital pins 3 to 10. The
-// sensors' emitter control pin (CTRL or LEDON) can optionally be connected to
-// digital pin 2, or you can leave it disconnected and remove the call to
-// setEmitterPin().
-//
-// The setup phase of this example calibrates the sensors for ten seconds and
-// turns on the Arduino's LED (usually on pin 13) while calibration is going
-// on. During this phase, you should expose each reflectance sensor to the
-// lightest and darkest readings they will encounter. For example, if you are
-// making a line follower, you should slide the sensors across the line during
-// the calibration phase so that each sensor can get a reading of how dark the
-// line is and how light the ground is.  Improper calibration will result in
-// poor readings.
-//
-// The main loop of the example reads the calibrated sensor values and uses
-// them to estimate the position of a line. You can test this by taping a piece
-// of 3/4" black electrical tape to a piece of white paper and sliding the
-// sensor across it. It prints the sensor values to the serial monitor as
-// numbers from 0 (maximum reflectance) to 1000 (minimum reflectance) followed
-// by the estimated location of the line as a number from 0 to 5000. 1000 means
-// the line is directly under sensor 1, 2000 means directly under sensor 2,
-// etc. 0 means the line is directly under sensor 0 or was last seen by sensor
-// 0 before being lost. 5000 means the line is directly under sensor 5 or was
-// last seen by sensor 5 before being lost.
+AF_DCMotor motor1(1, MOTOR12_8KHZ ); // PIN 11 - create motor #1 pwm
+AF_DCMotor motor2(2, MOTOR12_8KHZ ); // PIN 3 - create motor #2 pwm
 
-QTRSensors qtr;
+// Change the values below to suit your robot's motors, weight, wheel type, etc.
+#define KP .2
+#define KD 5
+#define M1_DEFAULT_SPEED 50
+#define M2_DEFAULT_SPEED 50
+#define M1_MAX_SPEED 70
+#define M2_MAX_SPEED 70
+#define MIDDLE_SENSOR 3
+#define NUM_SENSORS  5      // number of sensors used
+#define TIMEOUT       2500  // waits for 2500 us for sensor outputs to go low
+#define EMITTER_PIN   2     // emitter is controlled by digital pin 2
+#define DEBUG 0 // set to 1 if serial debug output needed
 
-const uint8_t SensorCount = 8;
-uint16_t sensorValues[SensorCount];
+PololuQTRSensorsRC qtrrc((unsigned char[]) {  18,17,16,15,14} ,NUM_SENSORS, TIMEOUT, EMITTER_PIN);
+
+unsigned int sensorValues[NUM_SENSORS];
 
 void setup()
 {
-  // configure the sensors
-  qtr.setTypeRC();
-  qtr.setSensorPins((const uint8_t[]){3, 4, 5, 6, 7, 8, 9, 10}, SensorCount);
-  qtr.setEmitterPin(2);
-
-  delay(500);
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, HIGH); // turn on Arduino's LED to indicate we are in calibration mode
-
-  // 2.5 ms RC read timeout (default) * 10 reads per calibrate() call
-  // = ~25 ms per calibrate() call.
-  // Call calibrate() 400 times to make calibration take about 10 seconds.
-  for (uint16_t i = 0; i < 400; i++)
-  {
-    qtr.calibrate();
-  }
-  digitalWrite(LED_BUILTIN, LOW); // turn off Arduino's LED to indicate we are through with calibration
-
-  // print the calibration minimum values measured when emitters were on
-  Serial.begin(9600);
-  for (uint8_t i = 0; i < SensorCount; i++)
-  {
-    Serial.print(qtr.calibrationOn.minimum[i]);
-    Serial.print(' ');
-  }
-  Serial.println();
-
-  // print the calibration maximum values measured when emitters were on
-  for (uint8_t i = 0; i < SensorCount; i++)
-  {
-    Serial.print(qtr.calibrationOn.maximum[i]);
-    Serial.print(' ');
-  }
-  Serial.println();
-  Serial.println();
   delay(1000);
+  manual_calibration(); 
+  set_motors(0,0);
 }
+
+int lastError = 0;
+int  last_proportional = 0;
+int integral = 0;
+
 
 void loop()
 {
-  // read calibrated sensor values and obtain a measure of the line position
-  // from 0 to 5000 (for a white line, use readLineWhite() instead)
-  uint16_t position = qtr.readLineBlack(sensorValues);
+  unsigned int sensors[5];
+  int position = qtrrc.readLine(sensors);
+  int error = position - 2000;
 
-  // print the sensor values as numbers from 0 to 1000, where 0 means maximum
-  // reflectance and 1000 means minimum reflectance, followed by the line
-  // position
-  for (uint8_t i = 0; i < SensorCount; i++)
+  int motorSpeed = KP * error + KD * (error - lastError);
+  lastError = error;
+
+  int leftMotorSpeed = M1_DEFAULT_SPEED + motorSpeed;
+  int rightMotorSpeed = M2_DEFAULT_SPEED - motorSpeed;
+
+  // set motor speeds using the two motor speed variables above
+  set_motors(leftMotorSpeed, rightMotorSpeed);
+}
+
+void set_motors(int motor1speed, int motor2speed)
+{
+  if (motor1speed > M1_MAX_SPEED ) motor1speed = M1_MAX_SPEED; // limit top speed
+  if (motor2speed > M2_MAX_SPEED ) motor2speed = M2_MAX_SPEED; // limit top speed
+  if (motor1speed < 0) motor1speed = 0; // keep motor above 0
+  if (motor2speed < 0) motor2speed = 0; // keep motor speed above 0
+  motor1.setSpeed(motor1speed);     // set motor speed
+  motor2.setSpeed(motor2speed);     // set motor speed
+  motor1.run(FORWARD);  
+  motor2.run(FORWARD);
+}
+
+
+void manual_calibration() {
+
+  int i;
+  for (i = 0; i < 250; i++)  // the calibration will take a few seconds
   {
-    Serial.print(sensorValues[i]);
-    Serial.print('\t');
+    qtrrc.calibrate(QTR_EMITTERS_ON);
+    delay(20);
   }
-  Serial.println(position);
 
-  delay(250);
+  if (DEBUG) { // if true, generate sensor dats via serial output
+    Serial.begin(9600);
+    for (int i = 0; i < NUM_SENSORS; i++)
+    {
+      Serial.print(qtrrc.calibratedMinimumOn[i]);
+      Serial.print(' ');
+    }
+    Serial.println();
+
+    for (int i = 0; i < NUM_SENSORS; i++)
+    {
+      Serial.print(qtrrc.calibratedMaximumOn[i]);
+      Serial.print(' ');
+    }
+    Serial.println();
+    Serial.println();
+  }
 }
