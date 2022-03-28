@@ -1,5 +1,21 @@
+//Pololu sesnor libaries
 #include <PololuQTRSensors.h>
 #include <AFMotor.h>
+//
+
+//APDS color sensor libaries
+#include <Wire.h>
+#include <SparkFun_APDS9960.h>
+//
+// Global Variables for APDS color sensor
+SparkFun_APDS9960 apds = SparkFun_APDS9960();
+uint16_t ambient_light = 0;
+uint16_t red_light = 0;
+uint16_t green_light = 0;
+uint16_t blue_light = 0;
+//
+
+
 
 AF_DCMotor motor1(1, MOTOR12_8KHZ ); // PIN 11 - create motor #1 pwm
 AF_DCMotor motor2(2, MOTOR12_8KHZ ); // PIN 3 - create motor #2 pwm
@@ -11,7 +27,7 @@ AF_DCMotor motor2(2, MOTOR12_8KHZ ); // PIN 3 - create motor #2 pwm
 #define M2_DEFAULT_SPEED 50
 #define M1_MAX_SPEED 70
 #define M2_MAX_SPEED 70
-#define MIDDLE_SENSOR 3
+#define MIDDLE_SENSOR 2
 #define NUM_SENSORS  5      // number of sensors used
 #define TIMEOUT       2500  // waits for 2500 us for sensor outputs to go low
 #define EMITTER_PIN   2     // emitter is controlled by digital pin 2
@@ -26,13 +42,52 @@ void setup()
   delay(1000);
   manual_calibration(); 
   set_motors(0,0);
+  
+  // Initialize APDS-9960 (configure I2C and initial values)
+  if ( apds.init() ) {
+    Serial.println(F("APDS-9960 initialization complete"));
+  } else {
+    Serial.println(F("Something went wrong during APDS-9960 init!"));
+  }
+  
+  // Start running the APDS-9960 light sensor (no interrupts)
+  if ( apds.enableLightSensor(false) ) {
+    Serial.println(F("Light sensor is now running"));
+  } else {
+    Serial.println(F("Something went wrong during light sensor init!"));
+  }
 }
 
+// Checking the color by APDS sensor.
+void loop()
+{
+  // Read the light levels (ambient, red, green, blue)
+  if (  !apds.readAmbientLight(ambient_light) ||
+        !apds.readRedLight(red_light) ||
+        !apds.readGreenLight(green_light) ||
+        !apds.readBlueLight(blue_light) ) {
+    Serial.println("Error reading light values");
+  } else {
+    Serial.print("Ambient: ");
+    Serial.print(ambient_light);
+    Serial.print(" Red: ");
+    Serial.print(red_light);
+    Serial.print(" Green: ");
+    Serial.print(green_light);
+    Serial.print(" Blue: ");
+    Serial.println(blue_light);
+  }
+  // Wait 0.5 second before next reading
+  delay(500);
+}
+
+
+//Driving data
 int lastError = 0;
 int  last_proportional = 0;
 int integral = 0;
 
-
+//Driving data to Pololu sensor
 void loop()
 {
   unsigned int sensors[5];
@@ -61,9 +116,8 @@ void set_motors(int motor1speed, int motor2speed)
   motor2.run(FORWARD);
 }
 
-
-void manual_calibration() {
-
+void manual_calibration()
+{
   int i;
   for (i = 0; i < 250; i++)  // the calibration will take a few seconds
   {
@@ -89,3 +143,61 @@ void manual_calibration() {
     Serial.println();
   }
 }
+
+
+
+// An example of RBG leds code.
+// from red to yellow
+  for(int i = 0; i < 255; i++)
+  {
+    
+    analogWrite(ledRed,255); 
+    analogWrite(ledGreen,i);  
+    analogWrite(ledBlue,0);
+    delay(milliseconds);
+      
+  }
+
+  // from yellow to cyan
+  for(int i = 0; i < 255; i++)
+  {
+    
+    analogWrite(ledRed,255-i); 
+    analogWrite(ledGreen,255);  
+    analogWrite(ledBlue,i); 
+    delay(milliseconds);
+      
+  }
+
+  // from cyan to blue
+  for(int i = 0; i < 255; i++)
+  {
+    
+    analogWrite(ledRed,0); 
+    analogWrite(ledGreen,255-i);  
+    analogWrite(ledBlue,255); 
+    delay(milliseconds);
+      
+  }
+
+  // from blue to magenta
+  for(int i = 0; i < 255; i++)
+  {
+    
+    analogWrite(ledRed,i); 
+    analogWrite(ledGreen,0);  
+    analogWrite(ledBlue,255); 
+    delay(milliseconds);
+      
+  }
+
+  // from magenta to red
+  for(int i = 0; i < 255; i++)
+  {
+    
+    analogWrite(ledRed,255); 
+    analogWrite(ledGreen,0);  
+    analogWrite(ledBlue,255 - i); 
+    delay(milliseconds);
+      
+  }
