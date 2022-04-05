@@ -15,6 +15,10 @@ uint16_t green_light = 0;
 uint16_t blue_light = 0;
 //
 
+//Driving data
+int lastError = 0;
+int  last_proportional = 0;
+int integral = 0;
 
 
 AF_DCMotor motor1(1, MOTOR12_8KHZ ); // PIN 11 - create motor #1 pwm
@@ -57,35 +61,6 @@ void setup()
     Serial.println(F("Something went wrong during light sensor init!"));
   }
 }
-
-// Checking the color by APDS sensor.
-void loop()
-{
-  // Read the light levels (ambient, red, green, blue)
-  if (  !apds.readAmbientLight(ambient_light) ||
-        !apds.readRedLight(red_light) ||
-        !apds.readGreenLight(green_light) ||
-        !apds.readBlueLight(blue_light) ) {
-    Serial.println("Error reading light values");
-  } else {
-    Serial.print("Ambient: ");
-    Serial.print(ambient_light);
-    Serial.print(" Red: ");
-    Serial.print(red_light);
-    Serial.print(" Green: ");
-    Serial.print(green_light);
-    Serial.print(" Blue: ");
-    Serial.println(blue_light);
-  }
-  // Wait 0.5 second before next reading
-  delay(500);
-}
-
-
-//Driving data
-int lastError = 0;
-int  last_proportional = 0;
-int integral = 0;
 
 //Driving data to Pololu sensor
 void loop()
@@ -144,60 +119,83 @@ void manual_calibration()
   }
 }
 
+// Checking the color by APDS sensor.
+//void loop()
+//{
+//  // Read the light levels (ambient, red, green, blue)
+//  if (  !apds.readAmbientLight(ambient_light) ||
+//        !apds.readRedLight(red_light) ||
+//        !apds.readGreenLight(green_light) ||
+//        !apds.readBlueLight(blue_light) ) {
+//    Serial.println("Error reading light values");
+//  } else {
+//    Serial.print("Ambient: ");
+//    Serial.print(ambient_light);
+//    Serial.print(" Red: ");
+//    Serial.print(red_light);
+//    Serial.print(" Green: ");
+//    Serial.print(green_light);
+//    Serial.print(" Blue: ");
+//    Serial.println(blue_light);
+//  }
+//  // Wait 0.5 second before next reading
+//  delay(500);
+//}
+
 
 
 // An example of RBG leds code.
 // from red to yellow
-  for(int i = 0; i < 255; i++)
-  {
-    
-    analogWrite(ledRed,255); 
-    analogWrite(ledGreen,i);  
-    analogWrite(ledBlue,0);
-    delay(milliseconds);
-      
-  }
-
-  // from yellow to cyan
-  for(int i = 0; i < 255; i++)
-  {
-    
-    analogWrite(ledRed,255-i); 
-    analogWrite(ledGreen,255);  
-    analogWrite(ledBlue,i); 
-    delay(milliseconds);
-      
-  }
-
-  // from cyan to blue
-  for(int i = 0; i < 255; i++)
-  {
-    
-    analogWrite(ledRed,0); 
-    analogWrite(ledGreen,255-i);  
-    analogWrite(ledBlue,255); 
-    delay(milliseconds);
-      
-  }
-
-  // from blue to magenta
-  for(int i = 0; i < 255; i++)
-  {
-    
-    analogWrite(ledRed,i); 
-    analogWrite(ledGreen,0);  
-    analogWrite(ledBlue,255); 
-    delay(milliseconds);
-      
-  }
-
-  // from magenta to red
-  for(int i = 0; i < 255; i++)
-  {
-    
-    analogWrite(ledRed,255); 
-    analogWrite(ledGreen,0);  
-    analogWrite(ledBlue,255 - i); 
-    delay(milliseconds);
-      
-  }
+//  for(int i = 0; i < 255; i++)
+//  {
+//    
+//    analogWrite(ledRed,255); 
+//    analogWrite(ledGreen,i);  
+//    analogWrite(ledBlue,0);
+//    delay(milliseconds);
+//      
+//  }
+//
+//  // from yellow to cyan
+//  for(int i = 0; i < 255; i++)
+//  {
+//    
+//    analogWrite(ledRed,255-i); 
+//    analogWrite(ledGreen,255);  
+//    analogWrite(ledBlue,i); 
+//    delay(milliseconds);
+//      
+//  }
+//
+//  // from cyan to blue
+//  for(int i = 0; i < 255; i++)
+//  {
+//    
+//    analogWrite(ledRed,0); 
+//    analogWrite(ledGreen,255-i);  
+//    analogWrite(ledBlue,255); 
+//    delay(milliseconds);
+//      
+//  }
+//
+//  // from blue to magenta
+//  for(int i = 0; i < 255; i++)
+//  {
+//    
+//    analogWrite(ledRed,i); 
+//    analogWrite(ledGreen,0);  
+//    analogWrite(ledBlue,255); 
+//    delay(milliseconds);
+//      
+//  }
+//
+//  // from magenta to red
+//  for(int i = 0; i < 255; i++)
+//  {
+//    
+//    analogWrite(ledRed,255); 
+//    analogWrite(ledGreen,0);  
+//    analogWrite(ledBlue,255 - i); 
+//    delay(milliseconds);
+//      
+//  }
