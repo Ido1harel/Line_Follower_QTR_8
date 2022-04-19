@@ -1,6 +1,5 @@
 //Pololu sesnor libaries
 #include <PololuQTRSensors.h>
-#include <AFMotor.h>
 //
 
 //APDS color sensor libaries
@@ -20,9 +19,14 @@ int lastError = 0;
 int  last_proportional = 0;
 int integral = 0;
 
+// motor data
+int motorADirection = 12;
+int motorABrake = 9;
+int motorASpeed = 3;
+int motorADirection = 13;
+int motorABrake = 8;
+int motorASpeed = 11;
 
-AF_DCMotor motor1(1, MOTOR12_8KHZ ); // PIN 11 - create motor #1 pwm
-AF_DCMotor motor2(2, MOTOR12_8KHZ ); // PIN 3 - create motor #2 pwm
 
 // Change the values below to suit your robot's motors, weight, wheel type, etc.
 #define KP .2
@@ -45,7 +49,14 @@ void setup()
 {
   delay(1000);
   manual_calibration(); 
-  set_motors(0,0);
+  
+  //Setup Motor A
+  pinMode(12, OUTPUT); //Initiates Motor Channel A pin
+  pinMode(9, OUTPUT); //Initiates Brake Channel A pin
+
+  //Setup Motor B
+  pinMode(13, OUTPUT); //Initiates Motor Channel A pin
+  pinMode(8, OUTPUT);  //Initiates Brake Channel A pin
   
   // Initialize APDS-9960 (configure I2C and initial values)
   if ( apds.init() ) {
